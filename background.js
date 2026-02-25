@@ -3,6 +3,9 @@ const MAX_TOKENS = 1024;
 const SUMMARY_THRESHOLD = 20;
 const KEEP_RECENT = 5;
 
+// Cleanup from previous debug builds.
+chrome.storage.local.remove("anchorchat_request_logs");
+
 const PROVIDERS = {
   anthropic: {
     url: "https://api.anthropic.com/v1/messages",
@@ -13,8 +16,8 @@ const PROVIDERS = {
     model: "gpt-4o-mini",
   },
   gemini: {
-    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent",
-    model: "gemini-1.5-flash",
+    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent",
+    model: "gemini-2.5-flash",
   },
 };
 
@@ -67,8 +70,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // ── Main handler ──
 async function handlePinQuestion(message) {
-  const { pinId, question, conversationHistory, contextMode, pageContext } =
-    message;
+  const {
+    pinId,
+    selectedText,
+    question,
+    conversationHistory,
+    contextMode,
+    pageContext,
+  } = message;
 
   chrome.storage.local.get(
     ["anchorchat_api_key", "anchorchat_provider"],
@@ -86,7 +95,11 @@ async function handlePinQuestion(message) {
       }
 
       try {
-        const systemPrompt = buildSystemPrompt(contextMode, pageContext);
+        const systemPrompt = buildSystemPrompt(
+          contextMode,
+          pageContext,
+          selectedText,
+        );
         const history = buildMessages(conversationHistory, question);
 
         if (provider === "anthropic") {
@@ -95,6 +108,8 @@ async function handlePinQuestion(message) {
           await callOpenAI(apiKey, pinId, systemPrompt, history);
         } else if (provider === "gemini") {
           await callGemini(apiKey, pinId, systemPrompt, history);
+        } else {
+          throw new Error(`Unsupported provider: ${provider}`);
         }
       } catch (err) {
         console.error("[AnchorChat] Error:", err);
@@ -110,7 +125,15 @@ async function handlePinQuestion(message) {
 
 // ── Anthropic ──
 async function callAnthropic(apiKey, pinId, systemPrompt, messages) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const payload = {
+    model: PROVIDERS.anthropic.model,
+    max_tokens: MAX_TOKENS,
+    stream: true,
+    system: systemPrompt,
+    messages,
+  };
+
+  const response = await fetch(PROVIDERS.anthropic.url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -118,15 +141,8 @@ async function callAnthropic(apiKey, pinId, systemPrompt, messages) {
       "anthropic-version": "2023-06-01",
       "anthropic-dangerous-direct-browser-access": "true",
     },
-    body: JSON.stringify({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: MAX_TOKENS,
-      stream: true,
-      system: systemPrompt,
-      messages,
-    }),
+    body: JSON.stringify(payload),
   });
-
   if (!response.ok) {
     const err = await response.json();
     sendToPanel({
@@ -134,7 +150,7 @@ async function callAnthropic(apiKey, pinId, systemPrompt, messages) {
       pinId,
       error: err.error?.message || `Anthropic error ${response.status}`,
     });
-    return;
+    throw new Error(err.error?.message || `Anthropic error ${response.status}`);
   }
 
   await streamSSE(response, pinId, (parsed) => {
@@ -157,21 +173,20 @@ async function callOpenAI(apiKey, pinId, systemPrompt, messages) {
     { role: "system", content: systemPrompt },
     ...messages,
   ];
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const payload = {
+    model: PROVIDERS.openai.model,
+    max_tokens: MAX_TOKENS,
+    stream: true,
+    messages: openaiMessages,
+  };
+  const response = await fetch(PROVIDERS.openai.url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      max_tokens: MAX_TOKENS,
-      stream: true,
-      messages: openaiMessages,
-    }),
+    body: JSON.stringify(payload),
   });
-
   if (!response.ok) {
     const err = await response.json();
     sendToPanel({
@@ -179,7 +194,7 @@ async function callOpenAI(apiKey, pinId, systemPrompt, messages) {
       pinId,
       error: err.error?.message || `OpenAI error ${response.status}`,
     });
-    return;
+    throw new Error(err.error?.message || `OpenAI error ${response.status}`);
   }
 
   await streamSSE(response, pinId, (parsed) => {
@@ -198,19 +213,18 @@ async function callGemini(apiKey, pinId, systemPrompt, messages) {
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
   }));
-
+  const payload = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents,
+  };
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${apiKey}&alt=sse`,
+    `${PROVIDERS.gemini.url}?key=${encodeURIComponent(apiKey)}&alt=sse`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents,
-      }),
+      body: JSON.stringify(payload),
     },
   );
-
   if (!response.ok) {
     const err = await response.json();
     sendToPanel({
@@ -218,7 +232,7 @@ async function callGemini(apiKey, pinId, systemPrompt, messages) {
       pinId,
       error: err.error?.message || `Gemini error ${response.status}`,
     });
-    return;
+    throw new Error(err.error?.message || `Gemini error ${response.status}`);
   }
 
   await streamSSE(response, pinId, (parsed) => {
@@ -280,8 +294,11 @@ function buildMessages(conversationHistory, question) {
   return history;
 }
 
-function buildSystemPrompt(contextMode, pageContext) {
+function buildSystemPrompt(contextMode, pageContext, selectedText) {
   let base = `You are AnchorChat, a focused assistant helping the user understand a specific piece of text they selected. Be concise and directly relevant.`;
+  if (selectedText) {
+    base += `\n\nPinned text (highest priority):\n\n${selectedText}`;
+  }
   if (contextMode === "full" && pageContext)
     base += `\n\nFull conversation context:\n\n${pageContext}`;
   else if (contextMode === "surrounding" && pageContext)

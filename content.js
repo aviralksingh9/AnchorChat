@@ -10,6 +10,7 @@
   "use strict";
 
   const IS_CLAUDE = window.location.hostname === "claude.ai";
+  const SURROUNDING_LINE_RADIUS = 5;
 
   let bubble = null;
   let lastSelection = "";
@@ -127,9 +128,15 @@
 
     hideBubble();
 
-    const pageContext = IS_CLAUDE
-      ? scrapeClaudeConversation()
-      : scrapeUniversalContext(lastRange);
+    const pageContextFull = IS_CLAUDE
+      ? scrapeClaudeConversation() || scrapeFullPageContext()
+      : scrapeFullPageContext();
+    const pageContextSurrounding =
+      extractSurroundingLines(
+        pageContextFull || "",
+        lastSelection,
+        SURROUNDING_LINE_RADIUS,
+      ) || scrapeUniversalContext(lastRange);
 
     // Open side panel via background
     chrome.runtime.sendMessage({ type: "OPEN_SIDE_PANEL" });
@@ -144,7 +151,9 @@
       chrome.runtime.sendMessage({
         type: "NEW_PIN",
         selectedText: pinnedText,
-        pageContext,
+        pageContext: pageContextFull,
+        pageContextFull,
+        pageContextSurrounding,
         contextMode: null,
       });
     }, 500);
@@ -178,7 +187,7 @@
             );
             results.push({
               role: isHuman ? "Human" : "Assistant",
-              text: text.slice(0, 800),
+              text,
             });
           }
         });
@@ -205,20 +214,29 @@
           const text = el.innerText?.trim();
           return text && text.length > 50 && el.children.length < 5;
         })
-        .map((el) => el.innerText.trim().slice(0, 600));
+        .map((el) => el.innerText.trim());
 
       // Deduplicate adjacent identical blocks
       const deduped = blocks.filter((b, i) => b !== blocks[i - 1]);
 
       if (deduped.length === 0) return null;
 
-      return deduped.slice(-20).join("\n\n---\n\n"); // last 20 blocks
+      return deduped.join("\n\n---\n\n");
     } catch (_) {
       return null;
     }
   }
 
   // ── Universal Mode: Surrounding paragraph context ──
+  function scrapeFullPageContext() {
+    try {
+      const text = document.body?.innerText?.trim() || "";
+      return text || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   function scrapeUniversalContext(range) {
     try {
       if (!range) return null;
@@ -243,17 +261,44 @@
       const fullText = section?.innerText?.trim() || "";
       if (!fullText) return null;
 
-      // Find selection position within the text and grab ~5 lines around it
-      const selText = lastSelection;
-      const idx = fullText.indexOf(selText);
-      if (idx === -1) return fullText.slice(0, 1000);
-
-      const start = Math.max(0, idx - 400);
-      const end = Math.min(fullText.length, idx + selText.length + 400);
-      return fullText.slice(start, end);
+      return extractSurroundingLines(
+        fullText,
+        lastSelection,
+        SURROUNDING_LINE_RADIUS,
+      );
     } catch (_) {
       return null;
     }
+  }
+
+  function extractSurroundingLines(fullText, selectedText, lineRadius) {
+    if (!fullText) return null;
+    const lines = fullText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (!lines.length) return null;
+
+    const needle = (selectedText || "").trim().toLowerCase();
+    if (!needle) return lines.slice(0, lineRadius * 2 + 1).join("\n");
+
+    let matchIndex = lines.findIndex((line) =>
+      line.toLowerCase().includes(needle),
+    );
+    if (matchIndex === -1) {
+      const snippet = needle.slice(0, Math.min(50, needle.length));
+      if (snippet) {
+        matchIndex = lines.findIndex((line) =>
+          line.toLowerCase().includes(snippet),
+        );
+      }
+    }
+
+    if (matchIndex === -1) return lines.slice(0, lineRadius * 2 + 1).join("\n");
+
+    const start = Math.max(0, matchIndex - lineRadius);
+    const end = Math.min(lines.length, matchIndex + lineRadius + 1);
+    return lines.slice(start, end).join("\n");
   }
 
   function formatConversation(messages) {

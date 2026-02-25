@@ -42,7 +42,12 @@
   port.onMessage.addListener((message) => {
     switch (message.type) {
       case "NEW_PIN":
-        createPinCard(message.selectedText, message.pageContext);
+        createPinCard(
+          message.selectedText,
+          message.pageContext,
+          message.pageContextFull,
+          message.pageContextSurrounding,
+        );
         break;
       case "PIN_STREAM_CHUNK":
         appendChunk(message.pinId, message.chunk);
@@ -69,12 +74,19 @@
   });
 
   // ── Create a new pin card ──
-  function createPinCard(selectedText, pageContext) {
+  function createPinCard(
+    selectedText,
+    pageContext,
+    pageContextFull,
+    pageContextSurrounding,
+  ) {
     const pinId = "pin-" + ++pinCounter;
 
     pins.set(pinId, {
       selectedText,
       pageContext,
+      pageContextFull: pageContextFull || pageContext || null,
+      pageContextSurrounding: pageContextSurrounding || null,
       history: [],
       streaming: false,
       streamBuffer: "",
@@ -160,6 +172,12 @@
     // Read context mode from storage then fire
     chrome.storage.local.get("anchorchat_context_mode", (r) => {
       const contextMode = r["anchorchat_context_mode"] || "full";
+      const pageContextForMode =
+        contextMode === "none"
+          ? null
+          : contextMode === "surrounding"
+            ? pin.pageContextSurrounding || pin.pageContextFull || pin.pageContext
+            : pin.pageContextFull || pin.pageContext || pin.pageContextSurrounding;
 
       const msg = {
         type: "SEND_PIN_QUESTION",
@@ -168,7 +186,7 @@
         question,
         conversationHistory: buildApiHistory(pin.history),
         contextMode,
-        pageContext: contextMode === "none" ? null : pin.pageContext,
+        pageContext: pageContextForMode,
       };
       if (window._anchorPort) {
         window._anchorPort.postMessage(msg);
