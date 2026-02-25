@@ -134,18 +134,20 @@
     // Open side panel via background
     chrome.runtime.sendMessage({ type: "OPEN_SIDE_PANEL" });
 
-    // Send pin data to panel (small delay to let panel open)
+    // Capture before clearing
+    const pinnedText = lastSelection;
+    lastSelection = "";
+    lastRange = null;
+
+    // Send pin data to panel (delay to let panel open)
     setTimeout(() => {
       chrome.runtime.sendMessage({
         type: "NEW_PIN",
-        selectedText: lastSelection,
+        selectedText: pinnedText,
         pageContext,
-        contextMode: null, // panel will read from storage
+        contextMode: null,
       });
-    }, 300);
-
-    lastSelection = "";
-    lastRange = null;
+    }, 500);
   }
 
   // ── Smart Mode: Scrape claude.ai conversation ──

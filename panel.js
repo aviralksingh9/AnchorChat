@@ -21,26 +21,30 @@
     }
   });
 
-  // ── Listen for messages from content.js / background.js ──
-  chrome.runtime.onMessage.addListener((message) => {
+  // ── Connect to background via persistent port ──
+  const port = chrome.runtime.connect({ name: "anchorchat-panel" });
+
+  port.onMessage.addListener((message) => {
     switch (message.type) {
       case "NEW_PIN":
         createPinCard(message.selectedText, message.pageContext);
         break;
-
       case "PIN_STREAM_CHUNK":
         appendChunk(message.pinId, message.chunk);
         break;
-
       case "PIN_STREAM_DONE":
         finaliseStream(message.pinId);
         break;
-
       case "PIN_ERROR":
         showCardError(message.pinId, message.error);
         break;
     }
   });
+
+  // runtime.onMessage not needed — NEW_PIN comes via port from background
+
+  // Expose port for sendQuestion
+  window._anchorPort = port;
 
   // ── Clear all pins ──
   clearAllBtn.addEventListener("click", () => {
@@ -142,7 +146,7 @@
     chrome.storage.local.get("anchorchat_context_mode", (r) => {
       const contextMode = r["anchorchat_context_mode"] || "full";
 
-      chrome.runtime.sendMessage({
+      const msg = {
         type: "SEND_PIN_QUESTION",
         pinId,
         selectedText: pin.selectedText,
@@ -150,7 +154,12 @@
         conversationHistory: buildApiHistory(pin.history),
         contextMode,
         pageContext: contextMode === "none" ? null : pin.pageContext,
-      });
+      };
+      if (window._anchorPort) {
+        window._anchorPort.postMessage(msg);
+      } else {
+        chrome.runtime.sendMessage(msg);
+      }
     });
   }
 
