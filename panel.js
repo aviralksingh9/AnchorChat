@@ -7,6 +7,12 @@
   // ── State ──
   const pins = new Map(); // pinId → { selectedText, pageContext, history: [] }
   let pinCounter = 0;
+  const PROVIDER_LABELS = {
+    anthropic: "Claude",
+    openai: "ChatGPT",
+    gemini: "Gemini",
+  };
+  let assistantLabel = "Model Response";
 
   // ── DOM refs ──
   const pinsContainer = document.getElementById("pins-container");
@@ -19,6 +25,15 @@
     if (!res?.key) {
       noKeyBanner.style.display = "block";
     }
+    assistantLabel = PROVIDER_LABELS[res?.provider] || "Model Response";
+  });
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") return;
+    if (!changes.anchorchat_provider) return;
+    assistantLabel =
+      PROVIDER_LABELS[changes.anchorchat_provider.newValue] ||
+      "Model Response";
   });
 
   // ── Connect to background via persistent port ──
@@ -256,7 +271,7 @@
     const el = document.createElement("div");
     el.className = "msg " + role;
     el.innerHTML = `
-      <div class="msg-role">${role === "user" ? "You" : "Claude"}</div>
+      <div class="msg-role">${role === "user" ? "You" : assistantLabel}</div>
       <div class="msg-text"></div>
     `;
     return el;
