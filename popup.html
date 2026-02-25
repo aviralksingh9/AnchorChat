@@ -182,6 +182,28 @@
             color: #e05c5c;
         }
 
+        .remember-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-top: 10px;
+            color: #a0a0a0;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .remember-row input[type="checkbox"] {
+            margin-top: 2px;
+            accent-color: #7c6af7;
+        }
+
+        .security-note {
+            margin-top: 8px;
+            font-size: 10px;
+            color: #7c7c7c;
+            line-height: 1.4;
+        }
+
         /* Settings screen */
         .key-display {
             background: #1a1a1a;
@@ -307,6 +329,14 @@
         <div class="input-label" id="key-label">Anthropic API Key</div>
         <input class="api-input" id="api-key-input" type="password" placeholder="sk-ant-..." autocomplete="off"
             spellcheck="false" />
+        <label class="remember-row">
+            <input type="checkbox" id="remember-key" />
+            <span>Remember key on this device</span>
+        </label>
+        <div class="security-note">
+            Recommended: keep this off for session-only mode. If enabled, the key is stored in extension local storage
+            on this device.
+        </div>
         <button class="save-btn" id="save-btn">Save & Activate</button>
         <div class="status-msg" id="status-msg"></div>
 
@@ -318,6 +348,7 @@
         <div class="section-title">Active Provider</div>
         <div class="key-display" id="key-display">—</div>
         <div id="provider-badge" class="provider-badge badge-anthropic">Anthropic</div>
+        <div class="security-note" id="storage-mode-note">Key mode: Session only (recommended)</div>
         <br />
         <button class="change-key-btn" id="change-key-btn">Change provider / API key</button>
 

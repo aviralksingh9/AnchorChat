@@ -122,18 +122,20 @@ The final request is composed using:
 ## Data and Storage
 
 Stored in `chrome.storage.local`:
-1. `anchorchat_api_key`
-2. `anchorchat_provider`
-3. `anchorchat_context_mode`
+1. `anchorchat_provider`
+2. `anchorchat_context_mode`
+3. `anchorchat_remember_key`
+4. `anchorchat_api_key` (only when user enables "Remember key on this device")
 
 Per-pin runtime state is kept in memory in `panel.js` and is reset when panel/session resets.
 
 ## Security and Privacy Notes
 
-1. API keys are stored in extension local storage.
-2. Selected text and context are sent to the selected provider only when you ask a question.
-3. `Full` mode can send large portions of page text, including visible UI text on that page.
-4. Use `Selected text only` for minimal data transfer.
+1. By default, API keys are session-only (kept in service worker memory).
+2. If user enables "Remember key on this device", key is stored in `chrome.storage.local`.
+3. Selected text and context are sent to the selected provider only when you ask a question.
+4. `Full` mode can send large portions of page text, including visible UI text on that page.
+5. Use `Selected text only` for minimal data transfer.
 
 ## Install and Run (Developer)
 
@@ -162,4 +164,3 @@ Per-pin runtime state is kept in memory in `panel.js` and is reset when panel/se
 8. `popup.js` - provider/key/context mode logic
 
 ## License
-

@@ -5,6 +5,8 @@ const KEEP_RECENT = 5;
 
 // Cleanup from previous debug builds.
 chrome.storage.local.remove("anchorchat_request_logs");
+let sessionApiKey = null;
+let sessionProvider = null;
 
 const PROVIDERS = {
   anthropic: {
@@ -39,15 +41,27 @@ chrome.runtime.onConnect.addListener((port) => {
 // ── Message router ──
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "GET_API_KEY") {
-    chrome.storage.local.get(
-      ["anchorchat_api_key", "anchorchat_provider"],
-      (r) => {
-        sendResponse({
-          key: r["anchorchat_api_key"] || null,
-          provider: r["anchorchat_provider"] || "anthropic",
-        });
-      },
-    );
+    getActiveAuth((auth) => {
+      sendResponse({
+        key: auth.apiKey || null,
+        provider: auth.provider || "anthropic",
+        source: auth.source || null,
+      });
+    });
+    return true;
+  }
+
+  if (message.type === "SET_SESSION_API_KEY") {
+    sessionApiKey = message.key || null;
+    sessionProvider = message.provider || null;
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.type === "CLEAR_SESSION_API_KEY") {
+    sessionApiKey = null;
+    sessionProvider = null;
+    sendResponse({ ok: true });
     return true;
   }
 
@@ -79,48 +93,43 @@ async function handlePinQuestion(message) {
     pageContext,
   } = message;
 
-  chrome.storage.local.get(
-    ["anchorchat_api_key", "anchorchat_provider"],
-    async (r) => {
-      const apiKey = r["anchorchat_api_key"];
-      const provider = r["anchorchat_provider"] || "anthropic";
+  getActiveAuth(async ({ apiKey, provider }) => {
 
-      if (!apiKey) {
-        sendToPanel({
-          type: "PIN_ERROR",
-          pinId,
-          error: "No API key found. Click the AnchorChat icon to add one.",
-        });
-        return;
+    if (!apiKey) {
+      sendToPanel({
+        type: "PIN_ERROR",
+        pinId,
+        error: "No API key found. Click the AnchorChat icon to add one.",
+      });
+      return;
+    }
+
+    try {
+      const systemPrompt = buildSystemPrompt(
+        contextMode,
+        pageContext,
+        selectedText,
+      );
+      const history = buildMessages(conversationHistory, question);
+
+      if (provider === "anthropic") {
+        await callAnthropic(apiKey, pinId, systemPrompt, history);
+      } else if (provider === "openai") {
+        await callOpenAI(apiKey, pinId, systemPrompt, history);
+      } else if (provider === "gemini") {
+        await callGemini(apiKey, pinId, systemPrompt, history);
+      } else {
+        throw new Error(`Unsupported provider: ${provider}`);
       }
-
-      try {
-        const systemPrompt = buildSystemPrompt(
-          contextMode,
-          pageContext,
-          selectedText,
-        );
-        const history = buildMessages(conversationHistory, question);
-
-        if (provider === "anthropic") {
-          await callAnthropic(apiKey, pinId, systemPrompt, history);
-        } else if (provider === "openai") {
-          await callOpenAI(apiKey, pinId, systemPrompt, history);
-        } else if (provider === "gemini") {
-          await callGemini(apiKey, pinId, systemPrompt, history);
-        } else {
-          throw new Error(`Unsupported provider: ${provider}`);
-        }
-      } catch (err) {
-        console.error("[AnchorChat] Error:", err);
-        sendToPanel({
-          type: "PIN_ERROR",
-          pinId,
-          error: "Error: " + err.message,
-        });
-      }
-    },
-  );
+    } catch (err) {
+      console.error("[AnchorChat] Error:", err);
+      sendToPanel({
+        type: "PIN_ERROR",
+        pinId,
+        error: "Error: " + err.message,
+      });
+    }
+  });
 }
 
 // ── Anthropic ──
@@ -327,4 +336,23 @@ function sendToPanel(message) {
       console.error("[AnchorChat] Panel send failed:", e);
     }
   }
+}
+
+function getActiveAuth(callback) {
+  if (sessionApiKey) {
+    callback({
+      apiKey: sessionApiKey,
+      provider: sessionProvider || "anthropic",
+      source: "session",
+    });
+    return;
+  }
+
+  chrome.storage.local.get(["anchorchat_api_key", "anchorchat_provider"], (r) => {
+    callback({
+      apiKey: r["anchorchat_api_key"] || null,
+      provider: r["anchorchat_provider"] || "anthropic",
+      source: r["anchorchat_api_key"] ? "local" : null,
+    });
+  });
 }
