@@ -14,10 +14,9 @@
 
 <video src="./assets/anchorchat-demo.mp4" controls width="900"></video>
 
-
 ## Why This Extension Exists
 
-When reading long AI chats, docs, or articles, people usually need answers about a specific line or paragraph.  
+When reading long AI chats, docs, or articles, people usually need answers about a specific line or paragraph.
 The problem is context switching: you copy text, open another tab, ask your question, then lose position and momentum.
 
 AnchorChat solves that by keeping the interaction anchored to the exact text selection.
@@ -25,7 +24,7 @@ AnchorChat solves that by keeping the interaction anchored to the exact text sel
 ## What AnchorChat Does
 
 1. You select text on any webpage.
-2. A small `⚓` bubble appears near the selection.
+2. A small `?` bubble appears near the selection.
 3. Clicking the bubble creates a pinned card in the side panel.
 4. You ask questions directly inside that card.
 5. The extension sends your question with the selected context mode.
@@ -34,13 +33,13 @@ AnchorChat solves that by keeping the interaction anchored to the exact text sel
 
 ## Context Modes
 
-1. `Full conversation`  
+1. `Full conversation`
 Sends full page/chat text as context.
 
-2. `5 lines surrounding`  
+2. `5 lines surrounding`
 Sends 5 lines above and 5 lines below the selected text.
 
-3. `Selected text only`  
+3. `Selected text only`
 Sends no extra page context.
 
 ## Supported AI Providers
@@ -51,19 +50,19 @@ Sends no extra page context.
 
 ## High-Level Architecture
 
-1. `content.js`  
+1. `content.js`
 Runs on pages, detects text selection, captures context, sends `NEW_PIN`.
 
-2. `panel.js` + `panel.html` + `panel.css`  
+2. `panel.js` + `panel.html` + `panel.css`
 Renders pin cards, chat input, streaming UI, and per-pin state.
 
-3. `background.js`  
+3. `background.js`
 Receives chat requests, builds prompt/history, calls provider APIs with streaming, pushes chunks back to panel.
 
-4. `popup.js` + `popup.html`  
-Lets user choose provider, save API key, and set context mode.
+4. `popup.js` + `popup.html`
+Lets user choose provider, save API key mode, and set context mode.
 
-5. `manifest.json`  
+5. `manifest.json`
 Registers permissions, content script, service worker, popup, and side panel.
 
 ## Technical Flow (Step by Step)
@@ -74,33 +73,35 @@ Registers permissions, content script, service worker, popup, and side panel.
 2. It stores `lastSelection` and selection range.
 3. It shows the floating anchor bubble.
 4. On click, it computes:
-   - Full context (`pageContextFull`)
-   - Surrounding lines context (`pageContextSurrounding`)
+- Full context (`pageContextFull`)
+- Surrounding lines context (`pageContextSurrounding`)
 5. It opens side panel and sends `NEW_PIN` message.
 
 ### 2) Pin to Question
 
 1. `panel.js` receives `NEW_PIN`.
 2. It creates a new pin card with:
-   - `selectedText`
-   - `pageContextFull`
-   - `pageContextSurrounding`
-   - `history`
+- `selectedText`
+- `pageContextFull`
+- `pageContextSurrounding`
+- `history`
 3. User types a question and presses send.
 4. Panel chooses context based on current mode:
-   - `full` -> full context
-   - `surrounding` -> 5-line context
-   - `none` -> null
+- `full` -> full context
+- `surrounding` -> 5-line context
+- `none` -> null
 
 ### 3) Question to Model
 
 1. Panel sends `SEND_PIN_QUESTION` to `background.js`.
-2. Background loads provider + API key from `chrome.storage.local`.
+2. Background resolves provider + API key from:
+- Session memory (default, recommended)
+- `chrome.storage.local` (only if user enabled "Remember key on this device")
 3. It builds:
-   - System prompt
-   - Pinned text priority section
-   - Optional page context
-   - Conversation history (with summarization when long)
+- System prompt
+- Pinned text priority section
+- Optional page context
+- Conversation history (with summarization when long)
 4. It calls provider API with streaming enabled.
 
 ### 4) Streaming Back to UI
@@ -143,8 +144,8 @@ Per-pin runtime state is kept in memory in `panel.js` and is reset when panel/se
 2. Enable Developer Mode.
 3. Click `Load unpacked`.
 4. Select this project folder.
-5. Open extension popup and save provider API key.
-6. Open any webpage, select text, click `⚓`, and ask.
+5. Open extension popup and save provider/API key settings.
+6. Open any webpage, select text, click `?`, and ask.
 
 ## Debug Surfaces
 
@@ -164,3 +165,7 @@ Per-pin runtime state is kept in memory in `panel.js` and is reset when panel/se
 8. `popup.js` - provider/key/context mode logic
 
 ## License
+
+Licensed under the Apache License, Version 2.0 (`Apache-2.0`).
+
+See [LICENSE](./LICENSE) for the full text.
