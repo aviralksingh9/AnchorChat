@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "AnchorChat",
+  "version": "1.0.0",
+  "description": "Pin any text from a Claude response and ask questions about it - without losing your place.",
+
+  "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
+
+  "host_permissions": ["https://claude.ai/*", "https://api.anthropic.com/*"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_title": "AnchorChat",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

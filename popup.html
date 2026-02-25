@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnchorChat</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 320px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f0f0f;
+            color: #f0f0f0;
+            padding: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        /* ── SCREENS ── */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* ── ONBOARDING ── */
+        .step {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .step-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #888;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .link-btn {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 11px;
+            color: #7c6af7;
+            text-decoration: none;
+            border: 1px solid #2a2560;
+            border-radius: 4px;
+            padding: 3px 8px;
+            transition: background 0.15s;
+        }
+
+        .link-btn:hover {
+            background: #1a1740;
+        }
+
+        .divider {
+            height: 1px;
+            background: #1e1e1e;
+            margin: 20px 0;
+        }
+
+        .input-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .api-input {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #f0f0f0;
+            font-size: 12px;
+            padding: 10px 12px;
+            outline: none;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.15s;
+        }
+
+        .api-input:focus {
+            border-color: #7c6af7;
+        }
+
+        .api-input::placeholder {
+            color: #444;
+        }
+
+        .save-btn {
+            width: 100%;
+            margin-top: 12px;
+            padding: 10px;
+            background: #7c6af7;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .save-btn:hover {
+            background: #6a58e0;
+        }
+
+        .save-btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .status-msg {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 8px;
+            min-height: 16px;
+            color: #666;
+        }
+
+        .status-msg.success {
+            color: #4caf82;
+        }
+
+        .status-msg.error {
+            color: #e05c5c;
+        }
+
+        /* ── SETTINGS SCREEN ── */
+        .key-display {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            color: #666;
+            margin-bottom: 12px;
+            word-break: break-all;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .context-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .context-option:hover {
+            background: #1a1a1a;
+        }
+
+        .context-option.selected {
+            border-color: #7c6af7;
+            background: #12103a;
+        }
+
+        .context-option input[type="radio"] {
+            margin-top: 2px;
+            accent-color: #7c6af7;
+        }
+
+        .option-label {
+            font-size: 13px;
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        .option-desc {
+            font-size: 11px;
+            color: #555;
+            margin-top: 2px;
+            line-height: 1.4;
+        }
+
+        .change-key-btn {
+            width: 100%;
+            margin-top: 4px;
+            padding: 9px;
+            background: transparent;
+            color: #666;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
+        }
+
+        .change-key-btn:hover {
+            border-color: #555;
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="logo">
+        <span class="logo-icon">⚓</span>
+        <span class="logo-text">AnchorChat</span>
+    </div>
+
+    <!-- ── SCREEN 1: Onboarding ── -->
+    <div class="screen active" id="screen-onboarding">
+
+        <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <div class="step-title">Get your Anthropic API key</div>
+                <div class="step-desc">Sign up free — you get $5 credits instantly.<br>That's ~6,000 questions on Claude
+                    Haiku.</div>
+                <a class="link-btn" href="https://platform.anthropic.com" target="_blank">Open platform.anthropic.com
+                    ↗</a>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <div class="step-title">Create an API key</div>
+                <div class="step-desc">Go to API Keys → Create Key → copy it.</div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <div class="step-title">Paste it below</div>
+                <div class="step-desc">Stored locally in your browser only. Never sent to our servers.</div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="input-label">Anthropic API Key</div>
+        <input class="api-input" id="api-key-input" type="password" placeholder="sk-ant-..." autocomplete="off"
+            spellcheck="false" />
+        <button class="save-btn" id="save-btn">Save & Activate</button>
+        <div class="status-msg" id="status-msg"></div>
+
+    </div>
+
+    <!-- ── SCREEN 2: Settings ── -->
+    <div class="screen" id="screen-settings">
+
+        <div class="section-title">API Key</div>
+        <div class="key-display" id="key-display">—</div>
+        <button class="change-key-btn" id="change-key-btn">Change API key</button>
+
+        <div class="divider"></div>
+
+        <div class="section-title">Context Mode</div>
+
+        <label class="context-option selected" id="opt-full">
+            <input type="radio" name="context" value="full" checked />
+            <div>
+                <div class="option-label">Full conversation</div>
+                <div class="option-desc">Best answers. Sends entire claude.ai chat as context.</div>
+            </div>
+        </label>
+
+        <label class="context-option" id="opt-surrounding">
+            <input type="radio" name="context" value="surrounding" />
+            <div>
+                <div class="option-label">5 lines surrounding</div>
+                <div class="option-desc">Lighter. Only nearby text is sent.</div>
+            </div>
+        </label>
+
+        <label class="context-option" id="opt-none">
+            <input type="radio" name="context" value="none" />
+            <div>
+                <div class="option-label">Selected text only</div>
+                <div class="option-desc">Minimal. No surrounding context at all.</div>
+            </div>
+        </label>
+
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
