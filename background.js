@@ -54,6 +54,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SET_SESSION_API_KEY") {
     sessionApiKey = message.key || null;
     sessionProvider = message.provider || null;
+    publishAuthState();
     sendResponse({ ok: true });
     return true;
   }
@@ -61,6 +62,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "CLEAR_SESSION_API_KEY") {
     sessionApiKey = null;
     sessionProvider = null;
+    publishAuthState();
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.type === "REFRESH_AUTH_STATE") {
+    publishAuthState();
     sendResponse({ ok: true });
     return true;
   }
@@ -353,6 +361,16 @@ function getActiveAuth(callback) {
       apiKey: r["anchorchat_api_key"] || null,
       provider: r["anchorchat_provider"] || "anthropic",
       source: r["anchorchat_api_key"] ? "local" : null,
+    });
+  });
+}
+
+function publishAuthState() {
+  getActiveAuth((auth) => {
+    sendToPanel({
+      type: "AUTH_STATE",
+      hasKey: !!auth.apiKey,
+      provider: auth.provider || "anthropic",
     });
   });
 }

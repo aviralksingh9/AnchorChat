@@ -21,12 +21,7 @@
   const noKeyBanner = document.getElementById("no-key-banner");
 
   // ── Check API key on load ──
-  chrome.runtime.sendMessage({ type: "GET_API_KEY" }, (res) => {
-    if (!res?.key) {
-      noKeyBanner.style.display = "block";
-    }
-    assistantLabel = PROVIDER_LABELS[res?.provider] || "Model Response";
-  });
+  refreshAuthState();
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "local") return;
@@ -57,6 +52,11 @@
         break;
       case "PIN_ERROR":
         showCardError(message.pinId, message.error);
+        break;
+      case "AUTH_STATE":
+        noKeyBanner.style.display = message.hasKey ? "none" : "block";
+        assistantLabel =
+          PROVIDER_LABELS[message.provider] || "Model Response";
         break;
     }
   });
@@ -331,5 +331,12 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function refreshAuthState() {
+    chrome.runtime.sendMessage({ type: "GET_API_KEY" }, (res) => {
+      noKeyBanner.style.display = res?.key ? "none" : "block";
+      assistantLabel = PROVIDER_LABELS[res?.provider] || "Model Response";
+    });
   }
 })();

@@ -100,6 +100,7 @@ saveBtn.addEventListener("click", () => {
       },
       () => {
         chrome.runtime.sendMessage({ type: "CLEAR_SESSION_API_KEY" }, () => {
+          chrome.runtime.sendMessage({ type: "REFRESH_AUTH_STATE" });
           showStatus("Saved on this device.", "success");
           setTimeout(
             () => showSettingsScreen(key, selectedProvider, "full", true),
@@ -125,6 +126,7 @@ saveBtn.addEventListener("click", () => {
         },
         () => {
           chrome.storage.local.remove("anchorchat_api_key", () => {
+            chrome.runtime.sendMessage({ type: "REFRESH_AUTH_STATE" });
             showStatus("Saved for this session.", "success");
             setTimeout(
               () => showSettingsScreen(key, selectedProvider, "full", false),
@@ -142,7 +144,10 @@ changeKeyBtn.addEventListener("click", () => {
   chrome.runtime.sendMessage({ type: "CLEAR_SESSION_API_KEY" }, () => {
     chrome.storage.local.remove(
       ["anchorchat_api_key", "anchorchat_provider", "anchorchat_remember_key"],
-      showSetupScreen,
+      () => {
+        chrome.runtime.sendMessage({ type: "REFRESH_AUTH_STATE" });
+        showSetupScreen();
+      },
     );
   });
 });
