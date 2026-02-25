@@ -3,10 +3,11 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AnchorChat</title>
     <style>
-        * {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -17,27 +18,25 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #0f0f0f;
             color: #f0f0f0;
-            padding: 24px;
+            padding: 20px;
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
+            gap: 8px;
+            margin-bottom: 20px;
         }
 
         .logo-icon {
-            font-size: 24px;
+            font-size: 20px;
         }
 
         .logo-text {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            letter-spacing: -0.3px;
         }
 
-        /* ── SCREENS ── */
         .screen {
             display: none;
         }
@@ -46,71 +45,81 @@
             display: block;
         }
 
-        /* ── ONBOARDING ── */
-        .step {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .step-number {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .section-title {
             font-size: 11px;
-            color: #888;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .step-content {
-            flex: 1;
-        }
-
-        .step-title {
-            font-size: 13px;
-            font-weight: 500;
-            color: #e0e0e0;
-            margin-bottom: 4px;
-        }
-
-        .step-desc {
-            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             color: #666;
-            line-height: 1.5;
-        }
-
-        .link-btn {
-            display: inline-block;
-            margin-top: 6px;
-            font-size: 11px;
-            color: #7c6af7;
-            text-decoration: none;
-            border: 1px solid #2a2560;
-            border-radius: 4px;
-            padding: 3px 8px;
-            transition: background 0.15s;
-        }
-
-        .link-btn:hover {
-            background: #1a1740;
+            margin-bottom: 10px;
         }
 
         .divider {
             height: 1px;
             background: #1e1e1e;
-            margin: 20px 0;
+            margin: 16px 0;
+        }
+
+        /* Provider tabs */
+        .provider-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .provider-tab {
+            flex: 1;
+            padding: 7px 4px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 7px;
+            color: #666;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+        }
+
+        .provider-tab:hover {
+            color: #aaa;
+            border-color: #444;
+        }
+
+        .provider-tab.active {
+            background: #12103a;
+            border-color: #7c6af7;
+            color: #7c6af7;
+        }
+
+        .provider-info {
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .provider-info a {
+            color: #7c6af7;
+            text-decoration: none;
+        }
+
+        .free-badge {
+            display: inline-block;
+            font-size: 9px;
+            background: #0d2e1a;
+            color: #4caf82;
+            border: 1px solid #1a5c35;
+            border-radius: 4px;
+            padding: 1px 5px;
+            margin-left: 4px;
+            vertical-align: middle;
         }
 
         .input-label {
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .api-input {
@@ -119,8 +128,8 @@
             border: 1px solid #2a2a2a;
             border-radius: 8px;
             color: #f0f0f0;
-            font-size: 12px;
-            padding: 10px 12px;
+            font-size: 11px;
+            padding: 9px 11px;
             outline: none;
             font-family: 'Courier New', monospace;
             transition: border-color 0.15s;
@@ -136,7 +145,7 @@
 
         .save-btn {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 10px;
             padding: 10px;
             background: #7c6af7;
             color: #fff;
@@ -163,7 +172,6 @@
             text-align: center;
             margin-top: 8px;
             min-height: 16px;
-            color: #666;
         }
 
         .status-msg.success {
@@ -174,38 +182,74 @@
             color: #e05c5c;
         }
 
-        /* ── SETTINGS SCREEN ── */
+        /* Settings screen */
         .key-display {
             background: #1a1a1a;
             border: 1px solid #2a2a2a;
             border-radius: 8px;
-            padding: 10px 12px;
+            padding: 9px 11px;
             font-size: 11px;
             font-family: 'Courier New', monospace;
             color: #666;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             word-break: break-all;
         }
 
-        .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .provider-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
             margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .badge-anthropic {
+            background: #1a1030;
+            color: #a78bfa;
+            border: 1px solid #3d2a70;
+        }
+
+        .badge-openai {
+            background: #0d2010;
+            color: #4caf82;
+            border: 1px solid #1a5c35;
+        }
+
+        .badge-gemini {
+            background: #1a1200;
+            color: #f0b429;
+            border: 1px solid #3a2800;
+        }
+
+        .change-key-btn {
+            width: 100%;
+            padding: 8px;
+            background: transparent;
+            color: #666;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 0;
+        }
+
+        .change-key-btn:hover {
+            border-color: #555;
+            color: #aaa;
         }
 
         .context-option {
             display: flex;
             align-items: flex-start;
             gap: 10px;
-            padding: 10px;
+            padding: 9px;
             border-radius: 8px;
             border: 1px solid #2a2a2a;
-            margin-bottom: 8px;
+            margin-bottom: 7px;
             cursor: pointer;
-            transition: border-color 0.15s, background 0.15s;
+            transition: all 0.15s;
         }
 
         .context-option:hover {
@@ -223,7 +267,7 @@
         }
 
         .option-label {
-            font-size: 13px;
+            font-size: 12px;
             color: #e0e0e0;
             font-weight: 500;
         }
@@ -233,24 +277,6 @@
             color: #555;
             margin-top: 2px;
             line-height: 1.4;
-        }
-
-        .change-key-btn {
-            width: 100%;
-            margin-top: 4px;
-            padding: 9px;
-            background: transparent;
-            color: #666;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: border-color 0.15s, color 0.15s;
-        }
-
-        .change-key-btn:hover {
-            border-color: #555;
-            color: #aaa;
         }
     </style>
 </head>
@@ -262,39 +288,23 @@
         <span class="logo-text">AnchorChat</span>
     </div>
 
-    <!-- ── SCREEN 1: Onboarding ── -->
-    <div class="screen active" id="screen-onboarding">
+    <!-- ── SCREEN 1: Setup ── -->
+    <div class="screen active" id="screen-setup">
 
-        <div class="step">
-            <div class="step-number">1</div>
-            <div class="step-content">
-                <div class="step-title">Get your Anthropic API key</div>
-                <div class="step-desc">Sign up free — you get $5 credits instantly.<br>That's ~6,000 questions on Claude
-                    Haiku.</div>
-                <a class="link-btn" href="https://platform.anthropic.com" target="_blank">Open platform.anthropic.com
-                    ↗</a>
-            </div>
+        <div class="section-title">Choose AI Provider</div>
+
+        <div class="provider-tabs">
+            <div class="provider-tab active" data-provider="anthropic">Anthropic</div>
+            <div class="provider-tab" data-provider="openai">OpenAI</div>
+            <div class="provider-tab" data-provider="gemini">Gemini <span class="free-badge">FREE</span></div>
         </div>
 
-        <div class="step">
-            <div class="step-number">2</div>
-            <div class="step-content">
-                <div class="step-title">Create an API key</div>
-                <div class="step-desc">Go to API Keys → Create Key → copy it.</div>
-            </div>
+        <div class="provider-info" id="provider-info">
+            Get your key at <a href="https://platform.anthropic.com/settings/keys"
+                target="_blank">platform.anthropic.com</a>. Paid plans only — $5 minimum credit.
         </div>
 
-        <div class="step">
-            <div class="step-number">3</div>
-            <div class="step-content">
-                <div class="step-title">Paste it below</div>
-                <div class="step-desc">Stored locally in your browser only. Never sent to our servers.</div>
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="input-label">Anthropic API Key</div>
+        <div class="input-label" id="key-label">Anthropic API Key</div>
         <input class="api-input" id="api-key-input" type="password" placeholder="sk-ant-..." autocomplete="off"
             spellcheck="false" />
         <button class="save-btn" id="save-btn">Save & Activate</button>
@@ -305,9 +315,11 @@
     <!-- ── SCREEN 2: Settings ── -->
     <div class="screen" id="screen-settings">
 
-        <div class="section-title">API Key</div>
+        <div class="section-title">Active Provider</div>
         <div class="key-display" id="key-display">—</div>
-        <button class="change-key-btn" id="change-key-btn">Change API key</button>
+        <div id="provider-badge" class="provider-badge badge-anthropic">Anthropic</div>
+        <br />
+        <button class="change-key-btn" id="change-key-btn">Change provider / API key</button>
 
         <div class="divider"></div>
 
@@ -320,7 +332,6 @@
                 <div class="option-desc">Best answers. Sends entire claude.ai chat as context.</div>
             </div>
         </label>
-
         <label class="context-option" id="opt-surrounding">
             <input type="radio" name="context" value="surrounding" />
             <div>
@@ -328,12 +339,11 @@
                 <div class="option-desc">Lighter. Only nearby text is sent.</div>
             </div>
         </label>
-
         <label class="context-option" id="opt-none">
             <input type="radio" name="context" value="none" />
             <div>
                 <div class="option-label">Selected text only</div>
-                <div class="option-desc">Minimal. No surrounding context at all.</div>
+                <div class="option-desc">Minimal. No surrounding context.</div>
             </div>
         </label>
 
