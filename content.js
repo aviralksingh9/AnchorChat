@@ -53,7 +53,7 @@
   function showBubble(x, y) {
     if (!bubble) bubble = createBubble();
     bubble.style.left = x + window.scrollX + "px";
-    bubble.style.top = y + window.scrollY - 44 + "px";
+    bubble.style.top = y + window.scrollY - 52 + "px";
     bubble.style.opacity = "1";
     bubble.style.pointerEvents = "auto";
     bubble.style.transform = "scale(1)";
@@ -67,9 +67,12 @@
   }
 
   // ── Selection detection ──
-  document.addEventListener("mouseup", (e) => {
-    // Small delay to let selection settle
-    setTimeout(() => {
+  // Use selectionchange + mouseup combo for reliability on claude.ai
+  let selectionTimer = null;
+
+  document.addEventListener("selectionchange", () => {
+    clearTimeout(selectionTimer);
+    selectionTimer = setTimeout(() => {
       const selection = window.getSelection();
       const text = selection?.toString().trim();
 
@@ -79,14 +82,33 @@
       }
 
       lastSelection = text;
-      lastRange = selection.getRangeAt(0);
+      try {
+        lastRange = selection.getRangeAt(0);
+        const rect = lastRange.getBoundingClientRect();
+        if (!rect || rect.width === 0) return;
+        const x = rect.left + rect.width / 2 - 16;
+        const y = rect.top;
+        showBubble(x, y);
+      } catch (_) {}
+    }, 200);
+  });
 
-      const rect = lastRange.getBoundingClientRect();
-      const x = rect.left + rect.width / 2 - 16;
-      const y = rect.top;
-
-      showBubble(x, y);
-    }, 10);
+  document.addEventListener("mouseup", (e) => {
+    // Extra trigger on mouseup as backup
+    setTimeout(() => {
+      const selection = window.getSelection();
+      const text = selection?.toString().trim();
+      if (!text || text.length < 2) return;
+      lastSelection = text;
+      try {
+        lastRange = selection.getRangeAt(0);
+        const rect = lastRange.getBoundingClientRect();
+        if (!rect || rect.width === 0) return;
+        const x = rect.left + rect.width / 2 - 16;
+        const y = rect.top;
+        showBubble(x, y);
+      } catch (_) {}
+    }, 250);
   });
 
   // Hide bubble when clicking elsewhere

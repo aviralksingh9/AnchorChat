@@ -3,7 +3,7 @@
 // Makes direct calls to Anthropic API, streams responses back to panel
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = "claude-3-5-haiku-20241022";
 const MAX_TOKENS = 1024;
 const SUMMARY_THRESHOLD = 20; // messages before rolling summary kicks in
 const KEEP_RECENT = 5; // messages to keep in full after summarising
@@ -23,7 +23,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "OPEN_SIDE_PANEL") {
-    chrome.sidePanel.open({ tabId: sender.tab.id });
+    if (sender.tab && sender.tab.id) {
+      chrome.sidePanel.open({ tabId: sender.tab.id });
+    } else {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0] && tabs[0].id) chrome.sidePanel.open({ tabId: tabs[0].id });
+      });
+    }
     return true;
   }
 });
@@ -204,6 +210,7 @@ function summariseOlderMessages(messages) {
 
 // ── Send message to panel ──
 function sendToPanel(tabId, message) {
+  if (!tabId) return;
   chrome.tabs.sendMessage(tabId, message).catch(() => {
     // panel may not be open yet — silently ignore
   });
